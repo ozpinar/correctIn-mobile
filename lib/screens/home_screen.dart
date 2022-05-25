@@ -19,6 +19,17 @@ class _HomeScreenState extends State<HomeScreen> {
   final text2 = [
     {'id': 1, 'value': 'sssss'},
     {'id': 2, 'value': 'ssfdsfdssss'},
+    {'id': 2, 'value': 'ssfdsfdssss'},
+    {'id': 2, 'value': 'ssfdsfdssss'},
+    {'id': 2, 'value': 'ssfdsfdssss'},
+    {'id': 2, 'value': 'ssfdsfdssss'},
+    {'id': 2, 'value': 'ssfdsfdssss'},
+    {'id': 2, 'value': 'ssfdsfdssss'},
+    {'id': 2, 'value': 'ssfdsfdssss'},
+    {'id': 2, 'value': 'ssfdsfdssss'},
+    {'id': 2, 'value': 'ssfdsfdssss'},
+    {'id': 2, 'value': 'ssfdsfdssss'},
+    {'id': 2, 'value': 'ssfdsfdssss'},
   ];
 
   HomeState homeState = HomeState.teach;

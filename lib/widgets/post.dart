@@ -52,11 +52,14 @@ class _PostState extends State<Post> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "Emiliano Espana",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).primaryColor),
+                          InkWell(
+                            onTap: () {},
+                            child: Text(
+                              "Emiliano Espana",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).primaryColor),
+                            ),
                           ),
                           Text(
                             "16 mins ago",

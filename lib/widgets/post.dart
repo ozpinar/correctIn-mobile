@@ -1,25 +1,24 @@
 // ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors
-
 import 'package:correctin/screens/post_screen.dart';
 import 'package:flutter/material.dart';
 
 class Post extends StatefulWidget {
-  final List text;
-  const Post({Key? key, required List this.text}) : super(key: key);
+  final String text;
+  final int id;
+  const Post({Key? key, required this.text, required this.id})
+      : super(key: key);
 
   @override
   State<Post> createState() => _PostState();
 }
 
 class _PostState extends State<Post> {
-  List selectedWords = [];
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
         Navigator.of(context).push(MaterialPageRoute(builder: (_) {
-          return PostScreen(text: widget.text);
+          return PostScreen(text: widget.text, id: widget.id);
         }));
       },
       child: Container(
@@ -75,19 +74,7 @@ class _PostState extends State<Post> {
               ],
             ),
             Container(
-              margin: EdgeInsets.only(top: 10),
-              child: Wrap(
-                children: [
-                  ...widget.text
-                      .map(
-                        (word) => Text(
-                          word['value'] + ' ',
-                        ),
-                      )
-                      .toList()
-                ],
-              ),
-            )
+                margin: EdgeInsets.only(top: 10), child: Text(widget.text))
           ],
         ),
       ),

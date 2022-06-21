@@ -1,43 +1,24 @@
-// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors
+// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, unused_field, type_init_formals
 
 import 'package:correctin/widgets/correct.dart';
 import 'package:flutter/material.dart';
 
 class PostScreen extends StatefulWidget {
-  final List text;
-  const PostScreen({Key? key, required List this.text}) : super(key: key);
+  final String text;
+  final int id;
+  const PostScreen({Key? key, required String this.text, required this.id})
+      : super(key: key);
 
   @override
   State<PostScreen> createState() => PostScreenState();
 }
 
 class PostScreenState extends State<PostScreen> {
-  List selectedWords = [];
-  void toggleWord(word) {
-    if (selectedWords.contains(word)) {
-      setState(() {
-        selectedWords.remove(word);
-      });
-      return;
-    }
-    setState(() {
-      selectedWords.add(word);
-    });
-  }
+  var isEditing = false;
 
-  bool hasWord(word) {
-    return selectedWords.contains(word);
-  }
-
-  void selectAll() {
+  void toggleEditing() {
     setState(() {
-      selectedWords = [...widget.text];
-    });
-  }
-
-  void clearSelection() {
-    setState(() {
-      selectedWords = [];
+      isEditing = !isEditing;
     });
   }
 
@@ -102,66 +83,32 @@ class PostScreenState extends State<PostScreen> {
                   ],
                 ),
                 Container(
-                  margin: EdgeInsets.only(top: 15, bottom: 25),
-                  child: Wrap(
-                    children: [
-                      ...widget.text
-                          .map((word) => InkWell(
-                                onTap: () {
-                                  toggleWord(word);
-                                },
-                                child: Text(
-                                  word['value'] + ' ',
-                                  style: TextStyle(
-                                      backgroundColor: hasWord(word)
-                                          ? Theme.of(context).primaryColor
-                                          : null,
-                                      color: hasWord(word)
-                                          ? Colors.white
-                                          : Colors.black,
-                                      fontSize: 18),
-                                ),
-                              ))
-                          .toList()
-                    ],
-                  ),
-                ),
+                    margin: EdgeInsets.only(top: 15, bottom: 25),
+                    child: Column(
+                      children: [
+                        isEditing
+                            ? TextField(
+                                controller: TextEditingController()
+                                  ..text = widget.text,
+                                onChanged: (text) => {},
+                                keyboardType: TextInputType.multiline,
+                              )
+                            : Text(widget.text),
+                        if (isEditing)
+                          TextField(
+                            keyboardType: TextInputType.multiline,
+                            decoration:
+                                InputDecoration(hintText: "Write a comment..."),
+                          ),
+                      ],
+                    )),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      child: Row(
-                        children: [
-                          Container(
-                            margin: EdgeInsets.only(right: 15),
-                            child: InkWell(
-                              onTap: selectAll,
-                              child: Image.asset(
-                                "assets/images/select-all.png",
-                                scale: 1.2,
-                              ),
-                            ),
-                          ),
-                          InkWell(
-                            onTap: clearSelection,
-                            child: Image.asset(
-                              "assets/images/clear-selection.png",
-                              scale: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    Container(),
                     ElevatedButton(
                       onPressed: () {
-                        showModalBottomSheet(
-                            isScrollControlled: true,
-                            context: context,
-                            builder: (context) {
-                              return Correct(
-                                words: selectedWords,
-                              );
-                            });
+                        toggleEditing();
                       },
                       style: ButtonStyle(
                           backgroundColor: MaterialStateProperty.all(

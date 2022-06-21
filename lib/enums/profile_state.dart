@@ -1,0 +1,1 @@
+enum ProfileState { posted, corrected }

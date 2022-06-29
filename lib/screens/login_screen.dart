@@ -22,8 +22,12 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  var loading = false;
 
   void login() async {
+    setState(() {
+      loading = true;
+    });
     try {
       var response = await Dio()
           .post(dotenv.env['API_URL']! + '/api/auth/login', data: {
@@ -37,8 +41,14 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (context) => MainLayout()));
       }
+      setState(() {
+        loading = false;
+      });
     } catch (e) {
       print(e);
+      setState(() {
+        loading = false;
+      });
     }
   }
 
@@ -167,7 +177,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         login();
                       },
-                      child: Text('Login'),
+                      child: loading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text('Login'),
                       style: ElevatedButton.styleFrom(
                           primary: Theme.of(context).primaryColor),
                     )

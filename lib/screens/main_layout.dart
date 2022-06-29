@@ -79,6 +79,9 @@ class _MainLayoutState extends State<MainLayout> {
               'authorization': "Bearer ${await storage.read(key: 'token')}",
             }));
     if (response.statusCode == 200) {
+      setState(() {
+        requests = requests.where((request) => request['id'] != id).toList();
+      });
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Follow request has been accepted!"),
@@ -87,10 +90,29 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
-  void rejectRequest() async {}
+  void rejectRequest(id) async {
+    var response = await Dio()
+        .put('${dotenv.env['API_URL']!}/api/user/follow/withdraw/$id',
+            data: {},
+            options: Options(headers: {
+              'authorization': "Bearer ${await storage.read(key: 'token')}",
+            }));
+    if (response.statusCode == 200) {
+      setState(() {
+        requests = requests.where((request) => request['id'] != id).toList();
+      });
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Follow request has been rejected!"),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
 
   @override
   void initState() {
+    getFollowRequests();
     if (widget.page == 'profile') {
       setState(() {
         currentScreen = ProfileScreen(
@@ -117,7 +139,6 @@ class _MainLayoutState extends State<MainLayout> {
               color: Theme.of(context).primaryColor,
             ),
             onPressed: () {
-              getFollowRequests();
               showModalBottomSheet(
                   context: context,
                   builder: (BuildContext context) {
@@ -154,7 +175,10 @@ class _MainLayoutState extends State<MainLayout> {
                                                       .primaryColor,
                                                 ),
                                                 IconButton(
-                                                  onPressed: () {},
+                                                  onPressed: () {
+                                                    rejectRequest(
+                                                        request['id']);
+                                                  },
                                                   icon: Icon(Icons.close),
                                                   color: Colors.red,
                                                 ),

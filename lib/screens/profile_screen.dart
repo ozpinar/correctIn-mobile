@@ -23,6 +23,12 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  String followStatus = "NOTFOLLOWING";
+  var followers = [];
+  var following = [];
+  var followerCount = 0;
+  var followingCount = 0;
+
   ProfileState profileState = ProfileState.posted;
   void switchProfileState(ProfileState newState) {
     setState(() {
@@ -44,10 +50,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
           content: Text("Follow request sent!"),
           behavior: SnackBarBehavior.floating,
         ));
+        setState(() {
+          followStatus = "SENT";
+        });
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("You are already following this user!"),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
+  void withdrawRequest() async {
+    try {
+      var response = await Dio().put(
+          dotenv.env['API_URL']! +
+              "/api/user/follow/withdraw/${widget.externalUser!['id']}?type=following",
+          options: Options(headers: {
+            'authorization': "Bearer ${await storage.read(key: 'token')}"
+          }));
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Follow request has been withdrawn!"),
+          behavior: SnackBarBehavior.floating,
+        ));
+        setState(() {
+          followStatus = "NOTFOLLOWING";
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("You can not withdraw an unsent request!"),
         behavior: SnackBarBehavior.floating,
       ));
     }
@@ -108,9 +143,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'authorization': "Bearer $token",
         }));
 
+    var responseFollowers = await Dio()
+        .get("${dotenv.env['API_URL']}/api/user/follow/${user['id']}",
+            options: Options(headers: {
+              'authorization': "Bearer $token",
+            }));
+
     setState(() {
       posts = responsePosts.data['posts'];
       checkedPosts = responseCheckedPosts.data['checkedPosts'];
+      followers = responseFollowers.data['followers'];
+      following = responseFollowers.data['followings'];
+      followerCount = responseFollowers.data['followersTotalItems'];
+      followingCount = responseFollowers.data['followingsTotalItems'];
       loading = false;
     });
   }
@@ -120,7 +165,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       children: [
         Container(
-          padding: EdgeInsets.only(bottom: 20),
+          padding: EdgeInsets.only(bottom: 18),
           decoration: BoxDecoration(
               borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(50),
@@ -216,7 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '16 followers',
+                      '$followerCount followers',
                       style: TextStyle(
                           color: Color.fromRGBO(89, 52, 79, 1),
                           fontWeight: FontWeight.w300),
@@ -225,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       width: 30,
                     ),
                     Text(
-                      '12 following',
+                      '$followingCount following',
                       style: TextStyle(
                           color: Color.fromRGBO(89, 52, 79, 1),
                           fontWeight: FontWeight.w300),
@@ -239,18 +284,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           ElevatedButton(
                               onPressed: () {
-                                sendFollowRequest();
+                                if (followStatus == "NOTFOLLOWING") {
+                                  sendFollowRequest();
+                                } else if (followStatus == "SENT") {
+                                  withdrawRequest();
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                   primary: Color.fromRGBO(228, 240, 218, 1),
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(30))),
-                              child: Text(
-                                'Follow',
-                                style: TextStyle(
-                                    color: Theme.of(context).primaryColor,
-                                    fontWeight: FontWeight.bold),
-                              )),
+                              child: followStatus == "NOTFOLLOWING"
+                                  ? Text(
+                                      'Follow',
+                                      style: TextStyle(
+                                          color: Theme.of(context).primaryColor,
+                                          fontWeight: FontWeight.bold),
+                                    )
+                                  : Text(
+                                      "Withdraw",
+                                      style: TextStyle(
+                                          color: Theme.of(context).primaryColor,
+                                          fontWeight: FontWeight.bold),
+                                    )),
                         ],
                       )
               ],

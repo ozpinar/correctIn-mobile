@@ -11,17 +11,16 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  String dropdownvalue = 'Item 1';
+  String dropdownvalue = 'English';
 
   // List of items in our dropdown menu
   var items = [
-    'Item 1',
-    'Item 2',
-    'Item 3',
-    'Item 4',
-    'Item 5',
+    'English',
+    'Portuguese',
+    'Spanish',
+    'French',
+    'Italian',
   ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

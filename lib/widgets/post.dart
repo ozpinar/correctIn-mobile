@@ -1,12 +1,11 @@
 // ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors
 import 'package:correctin/screens/post_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class Post extends StatefulWidget {
-  final String text;
-  final int id;
-  const Post({Key? key, required this.text, required this.id})
-      : super(key: key);
+  final Map post;
+  const Post({Key? key, required this.post}) : super(key: key);
 
   @override
   State<Post> createState() => _PostState();
@@ -18,7 +17,7 @@ class _PostState extends State<Post> {
     return InkWell(
       onTap: () {
         Navigator.of(context).push(MaterialPageRoute(builder: (_) {
-          return PostScreen(text: widget.text, id: widget.id);
+          return PostScreen(post: widget.post);
         }));
       },
       child: Container(
@@ -54,14 +53,17 @@ class _PostState extends State<Post> {
                           InkWell(
                             onTap: () {},
                             child: Text(
-                              "Emiliano Espana",
+                              widget.post['user']['firstName'] +
+                                  " " +
+                                  widget.post['user']['lastName'],
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Theme.of(context).primaryColor),
                             ),
                           ),
                           Text(
-                            "16 mins ago",
+                            timeago.format(
+                                DateTime.parse(widget.post['createdAt'])),
                             style: TextStyle(
                                 color: Color.fromRGBO(83, 127, 85, 0.5)),
                           )
@@ -74,7 +76,8 @@ class _PostState extends State<Post> {
               ],
             ),
             Container(
-                margin: EdgeInsets.only(top: 10), child: Text(widget.text))
+                margin: EdgeInsets.only(top: 10),
+                child: Text(widget.post['postBody']))
           ],
         ),
       ),

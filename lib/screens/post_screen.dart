@@ -1,13 +1,18 @@
 // ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, unused_field, type_init_formals
 
+import 'package:correctin/screens/profile_screen.dart';
+import 'package:correctin/storage.dart';
 import 'package:correctin/widgets/correct.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:timeago/timeago.dart' as timeago;
+
+import 'main_layout.dart';
 
 class PostScreen extends StatefulWidget {
-  final String text;
-  final int id;
-  const PostScreen({Key? key, required String this.text, required this.id})
-      : super(key: key);
+  final Map post;
+  const PostScreen({Key? key, required this.post}) : super(key: key);
 
   @override
   State<PostScreen> createState() => PostScreenState();
@@ -15,11 +20,45 @@ class PostScreen extends StatefulWidget {
 
 class PostScreenState extends State<PostScreen> {
   var isEditing = false;
-
   void toggleEditing() {
     setState(() {
       isEditing = !isEditing;
     });
+  }
+
+  late final correctController;
+  late final commentController;
+  @override
+  void initState() {
+    print(widget.post);
+    // TODO: implement initState
+    super.initState();
+    setState(() {
+      correctController = TextEditingController()
+        ..text = widget.post['postBody'];
+      commentController = TextEditingController();
+    });
+  }
+
+  void correctEntry() async {
+    var response =
+        await Dio().post(dotenv.env['API_URL']! + '/api/post/checked-post',
+            data: {
+              'oldPostId': widget.post['id'],
+              'postBody': correctController.text,
+              'comment': commentController.text,
+            },
+            options: Options(headers: {
+              'authorization': "Bearer ${await storage.read(key: 'token')}",
+            }));
+
+    if (response.statusCode == 200) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Post has been corrected succesfully!"),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
   }
 
   @override
@@ -55,29 +94,43 @@ class PostScreenState extends State<PostScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Image.asset("assets/images/profile.png"),
-                        Container(
-                          margin: EdgeInsets.only(left: 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Emiliano Espana",
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).primaryColor),
-                              ),
-                              Text(
-                                "16 mins ago",
-                                style: TextStyle(
-                                    color: Color.fromRGBO(83, 127, 85, 0.5)),
-                              )
-                            ],
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: ((context) => MainLayout(
+                                      page: 'profile',
+                                      user: widget.post['user'],
+                                    ))));
+                      },
+                      child: Row(
+                        children: [
+                          Image.asset("assets/images/profile.png"),
+                          Container(
+                            margin: EdgeInsets.only(left: 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.post['user']['firstName'] +
+                                      " " +
+                                      widget.post['user']['lastName'],
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).primaryColor),
+                                ),
+                                Text(
+                                  timeago.format(
+                                      DateTime.parse(widget.post['createdAt'])),
+                                  style: TextStyle(
+                                      color: Color.fromRGBO(83, 127, 85, 0.5)),
+                                )
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     Image.asset("assets/images/dots.png"),
                   ],
@@ -88,14 +141,13 @@ class PostScreenState extends State<PostScreen> {
                       children: [
                         isEditing
                             ? TextField(
-                                controller: TextEditingController()
-                                  ..text = widget.text,
-                                onChanged: (text) => {},
+                                controller: correctController,
                                 keyboardType: TextInputType.multiline,
                               )
-                            : Text(widget.text),
+                            : Text(widget.post['postBody']),
                         if (isEditing)
                           TextField(
+                            controller: commentController,
                             keyboardType: TextInputType.multiline,
                             decoration:
                                 InputDecoration(hintText: "Write a comment..."),
@@ -109,6 +161,9 @@ class PostScreenState extends State<PostScreen> {
                     ElevatedButton(
                       onPressed: () {
                         toggleEditing();
+                        if (!isEditing) {
+                          correctEntry();
+                        }
                       },
                       style: ButtonStyle(
                           backgroundColor: MaterialStateProperty.all(

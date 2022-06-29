@@ -1,13 +1,14 @@
 // ignore_for_file: unused_local_variable, prefer_const_declarations, unused_element, sort_child_properties_last, prefer_const_constructors
 
-import 'dart:ffi';
-
 import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/material.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class CorrectedPost extends StatefulWidget {
-  const CorrectedPost({Key? key}) : super(key: key);
+  final Map correctedPost;
+  const CorrectedPost({Key? key, required this.correctedPost})
+      : super(key: key);
 
   @override
   State<CorrectedPost> createState() => _CorrectedPostState();
@@ -16,26 +17,28 @@ class CorrectedPost extends StatefulWidget {
 class _CorrectedPostState extends State<CorrectedPost> {
   @override
   Widget build(BuildContext context) {
-    final text1 = "I am go to school by bus.";
-    final text2 = "I go to the school by bus.";
+    final text1 = widget.correctedPost['oldPost']['postBody'] ?? "";
+    final text2 = widget.correctedPost['postBody'] ?? "";
 
     final text1Words = text1.split(" ").asMap().entries.map((entry) {
-      int idx = entry.key;
-      String word = entry.value;
-      return {
-        'id': idx,
-        'word': word,
-      };
-    }).toList();
+          int idx = entry.key;
+          String word = entry.value;
+          return {
+            'id': idx,
+            'word': word,
+          };
+        }).toList() ??
+        [];
 
     final text2Words = text2.split(" ").asMap().entries.map((entry) {
-      int idx = entry.key;
-      String word = entry.value;
-      return {
-        'id': idx,
-        'word': word,
-      };
-    }).toList();
+          int idx = entry.key;
+          String word = entry.value;
+          return {
+            'id': idx,
+            'word': word,
+          };
+        }).toList() ??
+        [];
 
     bool wordIsInOriginal(word) {
       return text1Words.indexWhere((text1Word) =>
@@ -83,7 +86,7 @@ class _CorrectedPostState extends State<CorrectedPost> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Corrected by user",
+                "Corrected by user @${widget.correctedPost['createdBy'] ?? ""}",
                 style: TextStyle(
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
@@ -113,13 +116,19 @@ class _CorrectedPostState extends State<CorrectedPost> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Emiliano Espana",
+                              widget.correctedPost['oldPost']['user']
+                                      ['firstName'] +
+                                  " " +
+                                  widget.correctedPost['oldPost']['user']
+                                      ['lastName'],
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Theme.of(context).primaryColor),
                             ),
                             Text(
-                              "16 mins ago",
+                              timeago.format(DateTime.parse(widget
+                                      .correctedPost['oldPost']['createdAt'] ??
+                                  "")),
                               style: TextStyle(
                                   color: Color.fromRGBO(83, 127, 85, 0.5)),
                             )
@@ -141,7 +150,7 @@ class _CorrectedPostState extends State<CorrectedPost> {
                             .map((word) => Container(
                                   padding: EdgeInsets.only(bottom: 25),
                                   child: Text(
-                                    '${word['word']} ',
+                                    '${word['word'] ?? ""} ',
                                     style: TextStyle(
                                         decoration: !wordIsInCorrected(word) ||
                                                 samePlaceIsChanged(word['id'])
@@ -160,12 +169,28 @@ class _CorrectedPostState extends State<CorrectedPost> {
                                   width: 2,
                                   color: Color.fromRGBO(92, 134, 93, .4)))),
                     ),
+                    Container(
+                      margin: EdgeInsets.only(top: 8),
+                      padding: EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                          color: Color.fromRGBO(92, 134, 93, .4),
+                          border:
+                              Border.all(color: Theme.of(context).primaryColor),
+                          borderRadius: BorderRadius.circular(8)),
+                      child: Row(
+                        children: [
+                          Container(
+                            child: Text(widget.correctedPost['comment'] ?? ""),
+                          ),
+                        ],
+                      ),
+                    ),
                     Row(
                       children: [
                         ...text2Words
                             .map(
                               (word) => Container(
-                                child: Text('${word['word']} '),
+                                child: Text('${word['word'] ?? ""} '),
                                 color: !wordIsInOriginal(word) ||
                                         samePlaceIsChanged(word['id'])
                                     ? Color.fromRGBO(92, 134, 93, .4)

@@ -1,14 +1,22 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables, prefer_interpolation_to_compose_strings
 
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:correctin/enums/profile_state.dart';
 import 'package:correctin/widgets/corrected_post.dart';
+import 'package:correctin/widgets/post.dart';
 import 'package:correctin/widgets/switcher_profile.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import '../storage.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  final Map? externalUser;
+  const ProfileScreen({Key? key, this.externalUser = const {}})
+      : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -19,6 +27,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void switchProfileState(ProfileState newState) {
     setState(() {
       profileState = newState;
+    });
+  }
+
+  void sendFollowRequest() async {
+    try {
+      var response = await Dio().post(
+          dotenv.env['API_URL']! +
+              "/api/user/follow/${widget.externalUser!['id']}",
+          options: Options(headers: {
+            'authorization': "Bearer ${await storage.read(key: 'token')}"
+          }));
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Follow request sent!"),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("You are already following this user!"),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
+  var loading = false;
+
+  var flags = {
+    'English': "https://www.worldometers.info/img/flags/small/tn_us-flag.gif",
+    'Spanish': "https://www.worldometers.info/img/flags/small/tn_sp-flag.gif",
+    'Turkish': "https://www.worldometers.info/img/flags/small/tn_tu-flag.gif",
+    'Portuguese':
+        "https://www.worldometers.info/img/flags/small/tn_po-flag.gif",
+    'French': "https://www.worldometers.info/img/flags/small/tn_fr-flag.gif",
+    'Italian': "https://www.worldometers.info/img/flags/small/tn_it-flag.gif",
+    'Polish': "https://www.worldometers.info/img/flags/small/tn_pl-flag.gif",
+    'Romanian': "https://www.worldometers.info/img/flags/small/tn_ro-flag.gif"
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    getValues();
+  }
+
+  Map user = Map();
+  var token = "";
+  var langId = 0;
+  var foreignLangId = 0;
+  var posts = [];
+  var checkedPosts = [];
+
+  void getValues() async {
+    setState(() {
+      loading = true;
+    });
+    var userRes = (await storage.read(key: 'user'))!;
+    var tokenRes = (await storage.read(key: 'token'))!;
+    setState(() {
+      mapEquals(widget.externalUser, {})
+          ? user = json.decode(userRes)
+          : user = widget.externalUser!;
+      token = tokenRes;
+      langId = user['nativeLanguage']['id'];
+      foreignLangId = user['foreignLanguage']['id'];
+    });
+
+    var responsePosts = await Dio().get(
+        dotenv.env['API_URL']! +
+            '/api/post/all?sortBy=createdAt&orderBy=desc&userId=${user['id']}',
+        options: Options(headers: {
+          'authorization': "Bearer $token",
+        }));
+    var responseCheckedPosts = await Dio().get(
+        dotenv.env['API_URL']! +
+            '/api/post/checked-post/all?sortBy=createdAt&orderBy=desc&userId=${user['id']}',
+        options: Options(headers: {
+          'authorization': "Bearer $token",
+        }));
+
+    setState(() {
+      posts = responsePosts.data['posts'];
+      checkedPosts = responseCheckedPosts.data['checkedPosts'];
+      loading = false;
     });
   }
 
@@ -54,19 +147,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "John Doe",
+                      "${user['firstName'] ?? ""} ${user['lastName'] ?? ""}",
                       style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).primaryColor),
                     ),
-                    SizedBox(
-                      width: 10,
-                    ),
-                    Icon(
-                      Icons.chat,
-                      color: Theme.of(context).primaryColor,
-                    )
                   ],
                 ),
                 SizedBox(
@@ -88,7 +174,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: Image.network(
-                              'https://www.worldometers.info/img/flags/small/tn_tu-flag.gif',
+                              user.containsKey('nativeLanguage')
+                                  ? flags[user['nativeLanguage']
+                                      ['languageName']]!
+                                  : "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Solid_white.svg/480px-Solid_white.svg.png",
                               scale: 3,
                             ),
                           )
@@ -108,7 +197,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: Image.network(
-                              'https://www.worldometers.info/img/flags/small/tn_fr-flag.gif',
+                              user.containsKey('foreignLanguage')
+                                  ? flags[user['foreignLanguage']
+                                      ['languageName']]!
+                                  : "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Solid_white.svg/480px-Solid_white.svg.png",
                               scale: 3,
                             ),
                           )
@@ -140,39 +232,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     )
                   ],
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                            primary: Color.fromRGBO(228, 240, 218, 1),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30))),
-                        child: Text(
-                          'Follow',
-                          style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold),
-                        )),
-                  ],
-                )
+                mapEquals(widget.externalUser, {})
+                    ? Row()
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton(
+                              onPressed: () {
+                                sendFollowRequest();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                  primary: Color.fromRGBO(228, 240, 218, 1),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30))),
+                              child: Text(
+                                'Follow',
+                                style: TextStyle(
+                                    color: Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.bold),
+                              )),
+                        ],
+                      )
               ],
             ),
           ),
         ),
-        Expanded(
-          child: ListView(
-            children: [
-              SwitcherProfile(
-                  switchProfileState: switchProfileState,
-                  profileState: profileState),
-              CorrectedPost(),
-              CorrectedPost(),
-              CorrectedPost(),
-            ],
-          ),
-        )
+        loading
+            ? Padding(
+                padding: const EdgeInsets.all(64.0),
+                child: CircularProgressIndicator(
+                  color: Theme.of(context).primaryColor,
+                ),
+              )
+            : Expanded(
+                child: ListView(
+                  children: [
+                    SwitcherProfile(
+                        switchProfileState: switchProfileState,
+                        profileState: profileState),
+                    profileState == ProfileState.posted
+                        ? Column(
+                            children: [
+                              ...posts.map((post) => Post(post: post)).toList()
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              ...checkedPosts
+                                  .map((post) =>
+                                      CorrectedPost(correctedPost: post))
+                                  .toList()
+                            ],
+                          )
+                  ],
+                ),
+              )
       ],
     );
   }

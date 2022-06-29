@@ -260,20 +260,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      '$followerCount followers',
-                      style: TextStyle(
-                          color: Color.fromRGBO(89, 52, 79, 1),
-                          fontWeight: FontWeight.w300),
+                    GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return Column(
+                                children: [
+                                  ...followers
+                                      .map((follower) => Container(
+                                            padding: EdgeInsets.all(12),
+                                            child: Text(
+                                                "${follower['firstName']} ${follower['lastName']}"),
+                                          ))
+                                      .toList(),
+                                ],
+                              );
+                            });
+                      },
+                      child: Text(
+                        '$followerCount followers',
+                        style: TextStyle(
+                            color: Color.fromRGBO(89, 52, 79, 1),
+                            fontWeight: FontWeight.w300),
+                      ),
                     ),
                     SizedBox(
                       width: 30,
                     ),
-                    Text(
-                      '$followingCount following',
-                      style: TextStyle(
-                          color: Color.fromRGBO(89, 52, 79, 1),
-                          fontWeight: FontWeight.w300),
+                    GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return Column(
+                                children: [
+                                  ...following
+                                      .map((follow) => Container(
+                                            padding: EdgeInsets.all(12),
+                                            child: Text(
+                                                "${follow['firstName']} ${follow['lastName']}"),
+                                          ))
+                                      .toList(),
+                                ],
+                              );
+                            });
+                      },
+                      child: Text(
+                        '$followingCount following',
+                        style: TextStyle(
+                            color: Color.fromRGBO(89, 52, 79, 1),
+                            fontWeight: FontWeight.w300),
+                      ),
                     )
                   ],
                 ),
